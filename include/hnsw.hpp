@@ -79,8 +79,10 @@ public:
                "Vertex has already been inserted");
     vertex.layer = RandomChoiceLayer();
     vertex.neighbors.resize(vertex.layer + 1);
-
-    LOG_INFO("Insert #%u, layer=%d", q, vertex.layer);
+    for (size_t l = 1; l < vertex.neighbors.size(); l++) {
+      vertex.neighbors[l].reserve(maxM_);
+    }
+    vertex.neighbors[0].reserve(maxM0_);
 
     num_points_ += 1;
     if (num_points_ == 1) {
@@ -105,8 +107,6 @@ public:
       ep = SelectNeighborsHeuristic(query, candidates, M_);  // next ep
 
       for (const Point &neighbor : ep) {
-
-        LOG_INFO("Connect #%u to #%u at layer %d", q, neighbor.first, l);
         vertices_[neighbor.first].ConnectTo(q, neighbor.second, l);
         vertex.ConnectTo(neighbor.first, neighbor.second, l);
 
@@ -199,11 +199,7 @@ public:
     if (candidates.size() <= M) {
       return candidates;
     }
-
-    MaxPointHeap candidates_heap;
-    for (const auto &p : candidates) {
-      candidates_heap.push(p);
-    }
+    MaxPointHeap candidates_heap(candidates.begin(), candidates.end());
     return SelectNeighbors(q, candidates_heap, M);
   }
 
@@ -258,10 +254,7 @@ public:
     if (candidates.size() <= M) {
       return candidates;
     }
-    MaxPointHeap candidates_heap;
-    for (const auto &p : candidates) {
-      candidates_heap.push(p);
-    }
+    MaxPointHeap candidates_heap(candidates.begin(), candidates.end());
     return SelectNeighborsHeuristic(q, candidates_heap, M, keep_pruned);
   }
 
