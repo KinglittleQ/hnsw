@@ -113,7 +113,7 @@ public:
         // Shrink neighbors
         auto &edges = vertices_[neighbor.first].neighbors[l];
         if (edges.size() > maxM) {
-          edges = SelectNeighbors(points_[neighbor.first], edges, maxM);
+          edges = SelectNeighborsHeuristic(points_[neighbor.first], edges, maxM);
         }
       }
     }
@@ -200,12 +200,11 @@ public:
       return candidates;
     }
 
-    std::make_heap(candidates.begin(), candidates.end(), PointLessComparator());
-    while (candidates.size() > M) {
-      std::pop_heap(candidates.begin(), candidates.end(), PointLessComparator());
-      candidates.pop_back();
+    MaxPointHeap candidates_heap;
+    for (const auto &p : candidates) {
+      candidates_heap.push(p);
     }
-    return candidates;
+    return SelectNeighbors(q, candidates_heap, M);
   }
 
   // heuristic algo
@@ -253,6 +252,17 @@ public:
     }
 
     return selected_points;
+  }
+
+  PointSet SelectNeighborsHeuristic(const T *q, PointSet &candidates, size_t M, bool keep_pruned = true) {
+    if (candidates.size() <= M) {
+      return candidates;
+    }
+    MaxPointHeap candidates_heap;
+    for (const auto &p : candidates) {
+      candidates_heap.push(p);
+    }
+    return SelectNeighborsHeuristic(q, candidates_heap, M, keep_pruned);
   }
 
   layer_t RandomChoiceLayer() {
