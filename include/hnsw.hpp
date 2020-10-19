@@ -57,7 +57,7 @@ public:
     M_ = M;
     maxM_ = M;
     maxM0_ = 2 * M;
-    ml_ = 1 / log(M);
+    ml_ = 1 / log(1.0 * M);
     ef_ = ef;
     ef_construction_ = std::max(ef_construction, M);
     dim_ = dim;
@@ -95,14 +95,14 @@ public:
 
     for (layer_t l = top_layer_; l > vertex.layer; l--) {
       MaxPointHeap candidates = SearchLayer(query, ep, ef_, l);
-      ep = SelectNeighbors(query, candidates, 1);
+      ep = SelectNeighborsHeuristic(query, candidates, 1);
     }
 
     // Search neighbors and connect to them
     for (layer_t l = std::min(vertex.layer, top_layer_); l >= 0; l--) {
       size_t maxM = (l == 0) ? maxM0_ : maxM_;
       MaxPointHeap candidates = SearchLayer(query, ep, ef_construction_, l);
-      ep = SelectNeighbors(query, candidates, M_);  // next ep
+      ep = SelectNeighborsHeuristic(query, candidates, M_);  // next ep
 
       for (const Point &neighbor : ep) {
 
@@ -133,9 +133,9 @@ public:
     for (layer_t l = top_layer_; l >= 0; l--) {
       MaxPointHeap candidates = SearchLayer(query, ep, ef_construction_, l);
       if (l == 0) {
-        ep = SelectNeighbors(query, candidates, K);
+        ep = SelectNeighborsHeuristic(query, candidates, K);
       } else {
-        ep = SelectNeighbors(query, candidates, M_);
+        ep = SelectNeighborsHeuristic(query, candidates, M_);
       }
     }
 
@@ -196,6 +196,10 @@ public:
 
   // simple select
   PointSet SelectNeighbors(const T *q, PointSet &candidates, size_t M) {
+    if (candidates.size() <= M) {
+      return candidates;
+    }
+
     std::make_heap(candidates.begin(), candidates.end(), PointLessComparator());
     while (candidates.size() > M) {
       std::pop_heap(candidates.begin(), candidates.end(), PointLessComparator());
@@ -204,12 +208,61 @@ public:
     return candidates;
   }
 
+  // heuristic algo
+  PointSet SelectNeighborsHeuristic(const T *q, MaxPointHeap &candidates, size_t M, bool keep_pruned = true) {
+    if (candidates.size() <= M) {
+      PointSet selected_points;
+      while (!candidates.empty()) {
+        selected_points.push_back(candidates.top());
+        candidates.pop();
+      }
+      return selected_points;
+    }
+
+    MinPointHeap closest_candidates;
+    while (!candidates.empty()) {
+      closest_candidates.push(candidates.top());
+      candidates.pop();
+    }
+
+    PointSet selected_points;
+    MinPointHeap discarded_points;
+    while (!closest_candidates.empty()) {
+      Point p = closest_candidates.top();
+      closest_candidates.pop();
+      bool is_nearest = true;
+      for (const auto &neighbor : selected_points) {
+        T dist = distance_(points_[p.first], points_[neighbor.first]);
+        if (dist < p.second) {
+          is_nearest = false;
+          break;
+        }
+      }
+      if (is_nearest) {
+        selected_points.push_back(p);
+      } else {
+        discarded_points.push(p);
+      }
+    }
+
+    if (keep_pruned) {
+      while (selected_points.size() < M && !discarded_points.empty()) {
+        selected_points.push_back(discarded_points.top());
+        discarded_points.pop();
+      }
+    }
+
+    return selected_points;
+  }
+
   layer_t RandomChoiceLayer() {
     double x = distribution_(generator_);
     x = -std::log(x) * ml_;
     layer_t layer = static_cast<layer_t>(std::floor(x));
     return layer;
   }
+
+  layer_t TopLayer() { return top_layer_; }
 
 private:
   // private parameters

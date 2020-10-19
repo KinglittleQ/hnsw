@@ -40,6 +40,7 @@ int main(void) {
   auto t1 = std::chrono::steady_clock::now();
   auto duration = duration_cast<milliseconds>(t1 - t0).count();
   cout << "HNSW Build time: "<< duration << "ms" << endl;
+  cout << "Top layer: " << hnsw_index.TopLayer() << endl;
 
   float *queries = new float[dim * n_queries];
   GenerateRandomFloat(queries, dim * n_queries);
