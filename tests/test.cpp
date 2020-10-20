@@ -19,15 +19,15 @@ double ComputeRecall(const std::vector<PointSet> &groundtruth,
                      const std::vector<PointSet> &points);
 
 int main(void) {
-  size_t dim = 8;
-  size_t n_points = 100000;
-  size_t n_queries = 1;
+  uint32_t dim = 8;  // mutiple of 8
+  uint32_t n_points = 100000;
+  uint32_t n_queries = 10;
   float *points = new float[dim * n_points];
   GenerateRandomFloat(points, dim * n_points);
 
-  int M = 16;
-  int ef = 1;
-  int ef_construction = 200;
+  uint32_t M = 16;
+  uint32_t ef = 1;
+  uint32_t ef_construction = 200;
 
   hnsw::L2Distance<float> distance(dim);
   hnsw::HNSWIndex<float> hnsw_index(points, n_points, dim, distance, M, ef, ef_construction);
@@ -46,7 +46,7 @@ int main(void) {
 
   std::vector<PointSet> result1(n_queries);
   t0 = std::chrono::steady_clock::now();
-  for (size_t i = 0; i < n_queries; i++) {
+  for (uint32_t i = 0; i < n_queries; i++) {
     result1[i] = hnsw_index.Search(100, &queries[i * dim]);
   }
   t1 = std::chrono::steady_clock::now();
@@ -55,7 +55,7 @@ int main(void) {
 
   std::vector<PointSet> result2(n_queries);
   t0 = std::chrono::steady_clock::now();
-  for (size_t i = 0; i < n_queries; i++) {
+  for (uint32_t i = 0; i < n_queries; i++) {
     result2[i] = bf_index.Search(100, &queries[i * dim]);
   }
   t1 = std::chrono::steady_clock::now();

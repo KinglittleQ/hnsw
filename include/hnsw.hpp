@@ -49,7 +49,7 @@ class HNSWIndex : public Index<T> {
   };
 
 public:
-  HNSWIndex(T *data, size_t n_points, size_t dim, const Distance<T> &distance,
+  HNSWIndex(T *data, uint32_t n_points, uint32_t dim, const Distance<T> &distance,
             int M, int ef, int ef_construction) :
             points_(data, n_points, dim), distance_(distance) {
 
@@ -79,8 +79,8 @@ public:
                "Vertex has already been inserted");
     vertex.layer = RandomChoiceLayer();
     vertex.neighbors.resize(vertex.layer + 1);
-    for (size_t l = 1; l < vertex.neighbors.size(); l++) {
-      vertex.neighbors[l].reserve(maxM_);
+    for (auto iter = vertex.neighbors.begin() + 1; iter != vertex.neighbors.end(); iter++) {
+      iter->reserve(maxM_);
     }
     vertex.neighbors[0].reserve(maxM0_);
 
@@ -92,21 +92,21 @@ public:
     }
 
     const T *query = points_[q];
-    PointSet ep;
-    ep.emplace_back(ep_, distance_(query, points_[ep_]));
+    PointSet enterpoints;
+    enterpoints.emplace_back(ep_, distance_(query, points_[ep_]));
 
     for (layer_t l = top_layer_; l > vertex.layer; l--) {
-      MaxPointHeap candidates = SearchLayer(query, ep, ef_, l);
-      ep = SelectNeighborsHeuristic(query, candidates, 1);
+      MaxPointHeap candidates = SearchLayer(query, enterpoints, ef_, l);
+      enterpoints = SelectNeighborsHeuristic(query, candidates, 1);
     }
 
     // Search neighbors and connect to them
     for (layer_t l = std::min(vertex.layer, top_layer_); l >= 0; l--) {
-      size_t maxM = (l == 0) ? maxM0_ : maxM_;
-      MaxPointHeap candidates = SearchLayer(query, ep, ef_construction_, l);
-      ep = SelectNeighborsHeuristic(query, candidates, M_);  // next ep
+      uint32_t maxM = (l == 0) ? maxM0_ : maxM_;
+      MaxPointHeap candidates = SearchLayer(query, enterpoints, ef_construction_, l);
+      enterpoints = SelectNeighborsHeuristic(query, candidates, M_);  // next ep
 
-      for (const Point &neighbor : ep) {
+      for (const Point &neighbor : enterpoints) {
         vertices_[neighbor.first].ConnectTo(q, neighbor.second, l);
         vertex.ConnectTo(neighbor.first, neighbor.second, l);
 
@@ -126,28 +126,28 @@ public:
     return;
   }
 
-  PointSet Search(size_t K, const T *query) {
-    PointSet ep;
-    ep.emplace_back(ep_, distance_(query, points_[ep_]));  
+  PointSet Search(uint32_t K, const T *query) {
+    PointSet enterpoints;
+    enterpoints.emplace_back(ep_, distance_(query, points_[ep_]));
 
     for (layer_t l = top_layer_; l >= 0; l--) {
-      MaxPointHeap candidates = SearchLayer(query, ep, ef_construction_, l);
+      MaxPointHeap candidates = SearchLayer(query, enterpoints, ef_construction_, l);
       if (l == 0) {
-        ep = SelectNeighborsHeuristic(query, candidates, K);
+        enterpoints = SelectNeighborsHeuristic(query, candidates, K);
       } else {
-        ep = SelectNeighborsHeuristic(query, candidates, M_);
+        enterpoints = SelectNeighborsHeuristic(query, candidates, M_);
       }
     }
 
-    return ep;
+    return enterpoints;
   }
 
-  MaxPointHeap SearchLayer(const T *q, const PointSet &ep, size_t ef, size_t layer) {
+  MaxPointHeap SearchLayer(const T *q, const PointSet &ep, uint32_t ef, uint32_t layer) {
     MaxPointHeap result;  // max heap
     MinPointHeap candidates; // min heap
     unordered_map<index_t, bool> visited;
 
-    for (size_t i = 0; i < ep.size(); i++) {
+    for (uint32_t i = 0; i < ep.size(); i++) {
       visited[ep[i].first] = true;
       candidates.push(ep[i]);
       result.push(ep[i]);
@@ -182,7 +182,7 @@ public:
   }
 
   // simple select
-  PointSet SelectNeighbors(const T *q, MaxPointHeap &candidates, size_t M) {
+  PointSet SelectNeighbors(const T *q, MaxPointHeap &candidates, uint32_t M) {
     while (candidates.size() > M) {
       candidates.pop();
     }
@@ -195,7 +195,7 @@ public:
   }
 
   // simple select
-  PointSet SelectNeighbors(const T *q, PointSet &candidates, size_t M) {
+  PointSet SelectNeighbors(const T *q, PointSet &candidates, uint32_t M) {
     if (candidates.size() <= M) {
       return candidates;
     }
@@ -204,7 +204,8 @@ public:
   }
 
   // heuristic algo
-  PointSet SelectNeighborsHeuristic(const T *q, MaxPointHeap &candidates, size_t M, bool keep_pruned = true) {
+  PointSet SelectNeighborsHeuristic(const T *q, MaxPointHeap &candidates,
+                                    uint32_t M, bool keep_pruned = true) {
     if (candidates.size() <= M) {
       PointSet selected_points;
       while (!candidates.empty()) {
@@ -250,7 +251,8 @@ public:
     return selected_points;
   }
 
-  PointSet SelectNeighborsHeuristic(const T *q, PointSet &candidates, size_t M, bool keep_pruned = true) {
+  PointSet SelectNeighborsHeuristic(const T *q, PointSet &candidates, uint32_t M,
+                                    bool keep_pruned = true) {
     if (candidates.size() <= M) {
       return candidates;
     }
@@ -269,12 +271,12 @@ public:
 
 private:
   // private parameters
-  int M_;      // number of connections to be inserted to one node at one layer
-  int maxM_;   // maximumn number of neighbors of one node at one layer except layer 0
-  int maxM0_;  // maximumn number of neighbors of one node at layer 0
+  uint32_t M_;      // number of connections to be inserted to one node at one layer
+  uint32_t maxM_;   // maximumn number of neighbors of one node at one layer except layer 0
+  uint32_t maxM0_;  // maximumn number of neighbors of one node at layer 0
   double ml_;  // parameter of distribution to decide maximumn layer l. Autoselect ml = 1 / ln(M);
-  int ef_;     // number of neighbors to find while searching layer l < lc <= L
-  int ef_construction_;  // number of neighbors to find while searching layer 0 <= lc <= l
+  uint32_t ef_;     // number of neighbors to find while searching layer l < lc <= L
+  uint32_t ef_construction_;  // number of neighbors to find while searching layer 0 <= lc <= l
 
   // inner variables
   index_t ep_;  // enter point at the top layer
@@ -286,8 +288,8 @@ private:
 
   // private data members
   Matrix<T> points_;
-  size_t num_points_{0};
-  size_t dim_;
+  uint32_t num_points_{0};
+  uint32_t dim_;
   const Distance<T> &distance_;
 };
 

@@ -29,7 +29,7 @@ protected:
 public:
   Index() = default;
   virtual void Build() = 0;
-  virtual PointSet Search(size_t K, const T *query) = 0;
+  virtual PointSet Search(uint32_t K, const T *query) = 0;
   virtual ~Index() = default;
 };
 

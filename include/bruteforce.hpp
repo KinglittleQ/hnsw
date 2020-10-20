@@ -17,7 +17,7 @@ class BruteForceIndex : public Index<T> {
   using MaxPointHeap = std::priority_queue<Point, PointSet, PointLessComparator>;
 
 public:
-  BruteForceIndex(const T *data, size_t n_points, size_t dim, const Distance<T> &distance) :
+  BruteForceIndex(const T *data, uint32_t n_points, uint32_t dim, const Distance<T> &distance) :
                   points_(data, n_points, dim), num_points_(n_points),
                   dim_(dim), distance_(distance) {}
 
@@ -25,9 +25,9 @@ public:
 
   void Build() {}
 
-  PointSet Search(size_t K, const T *query) {
+  PointSet Search(uint32_t K, const T *query) {
     MaxPointHeap result;
-    for (size_t i = 0; i < num_points_; i++) {
+    for (uint32_t i = 0; i < num_points_; i++) {
       T dist = distance_(query, points_[i]);
       result.emplace(i, dist);
       if (result.size() > K) {
@@ -45,8 +45,8 @@ public:
 
 private:
   Matrix<T> points_;
-  size_t num_points_;
-  size_t dim_;
+  uint32_t num_points_;
+  uint32_t dim_;
   const Distance<T> &distance_;
 };
 
