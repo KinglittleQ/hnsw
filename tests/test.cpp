@@ -19,14 +19,14 @@ double ComputeRecall(const std::vector<PointSet> &groundtruth,
                      const std::vector<PointSet> &points);
 
 int main(void) {
-  const uint32_t dim = 8;  // mutiple of 8
+  const uint32_t dim = 8;
   const uint32_t n_points = 100000;
-  const uint32_t n_queries = 100;
+  const uint32_t n_queries = 1000;
   float *points = new float[dim * n_points];
   GenerateRandomFloat(points, dim * n_points);
 
   const uint32_t M = 16;
-  const uint32_t ef = 1;
+  const uint32_t ef = 10;
   const uint32_t ef_construction = 200;
   const uint32_t K = 100;
 
@@ -41,6 +41,7 @@ int main(void) {
   auto duration = duration_cast<milliseconds>(t1 - t0).count();
   cout << "HNSW Build time: "<< duration << "ms" << endl;
   cout << "Top layer: " << hnsw_index.TopLayer() << endl;
+  cout << "Distance calculations: " << distance.num << endl;
 
   float *queries = new float[dim * n_queries];
   GenerateRandomFloat(queries, dim * n_queries);
@@ -66,6 +67,7 @@ int main(void) {
   cout << "Recall: " << ComputeRecall(result2, result1) << endl;
 
   delete points;
+  delete queries;
 
   return 0;
 }

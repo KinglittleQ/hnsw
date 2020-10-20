@@ -12,7 +12,6 @@
 #include <random>
 #include <queue>
 #include <unordered_map>
-#include <set>
 #include <iostream>
 
 namespace hnsw {
@@ -21,7 +20,6 @@ using std::vector;
 using std::pair;
 using std::priority_queue;
 using std::unordered_map;
-using std::set;
 
 using layer_t = int32_t;
 

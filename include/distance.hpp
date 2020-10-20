@@ -21,8 +21,10 @@ public:
   virtual T operator() (const T *p1, const T *p2) const = 0;
   virtual ~Distance() = default;
 
+  mutable size_t num = 0;
+
 protected:
-  size_t dim_;
+  const size_t dim_;
 };
 
 template <typename T>
@@ -30,24 +32,19 @@ class L2Distance : public Distance<T> {
   using Distance<T>::dim_;
 
 public:
-  L2Distance(size_t dim) : Distance<T>(dim) {}
-  T operator() (const T *p1, const T *p2) const {
+  using Distance<T>::num;
 
+  L2Distance(size_t dim) : Distance<T>(dim) {}
+
+  T operator() (const T *p1, const T *p2) const {
+    num += 1;
 #ifndef __AVX__
-    // Auto vectorized with -O3 flag
-    T sum = 0;
-    for (size_t i = 0; i < dim_; i++) {
-      T tmp = p1[i] - p2[i];
-      sum += tmp * tmp;
-    }
-    return sum;
+    return Sqr_(p1, p2, dim_);
 #else
-    assert(dim_ % 8 == 0 && "The data dimension must be mutiple of 8 to use ARX");
     float result = 0;
 
     __m256 sum;
     __m256 tmp0, tmp1;
-    // unsigned D = (dim_ + 7) & ~7U;  // mutiple of 8
     unsigned residual_size = dim_ % 16;
     unsigned aligned_size = dim_ - residual_size;
     const float *residual_start1 = p1 + aligned_size;
@@ -55,9 +52,6 @@ public:
     float unpack[8] __attribute__ ((aligned (32))) = {0, 0, 0, 0, 0, 0, 0, 0};
 
     sum = _mm256_loadu_ps(unpack);
-    if ( residual_size != 0 ) {
-      AVX_L2SQR(residual_start1, residual_start2, sum, tmp0, tmp1);
-    }
 
     const float *ptr1 = p1;
     const float *ptr2 = p2;
@@ -65,12 +59,32 @@ public:
       AVX_L2SQR(ptr1, ptr2, sum, tmp0, tmp1);
       AVX_L2SQR(ptr1 + 8, ptr2 + 8, sum, tmp0, tmp1);
     }
+    if ( residual_size >= 8 ) {
+      AVX_L2SQR(residual_start1, residual_start2, sum, tmp0, tmp1);
+      residual_size -= 8;
+      residual_start1 += 8;
+      residual_start2 += 8;
+    }
     _mm256_storeu_ps(unpack, sum);
     result = unpack[0] + unpack[1] + unpack[2] + unpack[3] + \
              unpack[4] + unpack[5] + unpack[6] + unpack[7];
 
+    if (residual_size > 0) {
+      result += Sqr_(residual_start1, residual_start2, residual_size);
+    }
     return result;
 #endif
+  }
+
+private:
+  T Sqr_(const T *p1, const T *p2, uint32_t size) const {
+    // Auto vectorized with -O3 flag
+    T sum = 0;
+    for (size_t i = 0; i < size; i++) {
+      T tmp = p1[i] - p2[i];
+      sum += tmp * tmp;
+    }
+    return sum;
   }
 };
 
@@ -79,8 +93,11 @@ class L1Distance : public Distance<T> {
   using Distance<T>::dim_;
 
 public:
+  using Distance<T>::num;
+
   L1Distance(size_t dim) : Distance<T>(dim) {}
   T operator()(const T *p1, const T *p2) const {
+    num += 1;
     T sum = 0;
     for (size_t i = 0; i < dim_; i++) {
       sum += fabs(p1[i] - p2[i]);
