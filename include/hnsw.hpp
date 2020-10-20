@@ -15,9 +15,6 @@
 #include <set>
 #include <iostream>
 
-#define LOG_LEVEL ERROR_LEVEL
-#include "logger.hpp"
-
 namespace hnsw {
 
 using std::vector;
@@ -27,7 +24,6 @@ using std::unordered_map;
 using std::set;
 
 using layer_t = int32_t;
-
 
 template<typename T>
 class HNSWIndex : public Index<T> {
@@ -43,7 +39,7 @@ class HNSWIndex : public Index<T> {
     layer_t layer = 0;  // maximumn layer
 
     void ConnectTo(const index_t neighbor, T distance, layer_t l) {
-      LOG_ASSERT(l <= layer, "Too many layers");
+      assert(l <= layer && "Too many layers");
       neighbors[l].emplace_back(neighbor, distance);
     }
   };
@@ -75,8 +71,8 @@ public:
 
   void Insert(index_t q) {
     Vertex &vertex = vertices_[q];
-    LOG_ASSERT(vertex.layer == 0 && vertex.neighbors.size() == 0,
-               "Vertex has already been inserted");
+    assert(vertex.layer == 0 && vertex.neighbors.size() == 0
+           && "Vertex has already been inserted");
     vertex.layer = RandomChoiceLayer();
     vertex.neighbors.resize(vertex.layer + 1);
     for (auto iter = vertex.neighbors.begin() + 1; iter != vertex.neighbors.end(); iter++) {
