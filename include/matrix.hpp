@@ -18,14 +18,14 @@ public:
     }
   }
 
-  const T *operator[](size_t row) {
+  const T *operator[](size_t row) const {
     return row_ptrs_[row];
   }
 
   size_t Rows() { return rows_; }
   size_t Cols() { return cols_; }
 
-  void PrintMatrix() {
+  void PrintMatrix() const {
     for (size_t i = 0; i < rows_; i++) {
       for (size_t j = 0; j < cols_; j++) {
         std::cout << (*this)[i][j] << " ";
