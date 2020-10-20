@@ -21,7 +21,7 @@ double ComputeRecall(const std::vector<PointSet> &groundtruth,
 int main(void) {
   uint32_t dim = 8;  // mutiple of 8
   uint32_t n_points = 100000;
-  uint32_t n_queries = 10;
+  uint32_t n_queries = 100;
   float *points = new float[dim * n_points];
   GenerateRandomFloat(points, dim * n_points);
 
