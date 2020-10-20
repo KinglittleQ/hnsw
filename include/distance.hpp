@@ -38,7 +38,7 @@ public:
     for (size_t i = 0; i < dim_; i++) {
       sum += (p1[i] - p2[i]) * (p1[i] - p2[i]);
     }
-    return sqrt(sum);
+    return sum;
 #else
     float result = 0;
 
