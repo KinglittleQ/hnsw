@@ -24,8 +24,8 @@ using std::unordered_map;
 using layer_t = int32_t;
 
 class HNSWIndex : public Index {
-  using MaxPointHeap = priority_queue<Point, PointSet, PointLessComparator>;
-  using MinPointHeap = priority_queue<Point, PointSet, PointGreaterComparator>;
+  using MaxHeap = priority_queue<Point, PointSet, PointLessComparator>;
+  using MinHeap = priority_queue<Point, PointSet, PointGreaterComparator>;
 
   struct Vertex {
     vector<PointSet> neighbors;  // edges in layers
@@ -85,14 +85,14 @@ public:
     enterpoints.emplace_back(ep_, distance_(query, points_[ep_]));
 
     for (layer_t l = top_layer_; l > vertex.layer; l--) {
-      MaxPointHeap candidates = SearchLayer(query, enterpoints, ef_, l);
+      MaxHeap candidates = SearchLayer(query, enterpoints, ef_, l);
       enterpoints = SelectNeighborsHeuristic(query, candidates, 1);
     }
 
     // Search neighbors and connect to them
     for (layer_t l = std::min(vertex.layer, top_layer_); l >= 0; l--) {
       uint32_t maxM = (l == 0) ? maxM0_ : maxM_;
-      MaxPointHeap candidates = SearchLayer(query, enterpoints, ef_construction_, l);
+      MaxHeap candidates = SearchLayer(query, enterpoints, ef_construction_, l);
       enterpoints = SelectNeighborsHeuristic(query, candidates, M_);  // next ep
 
       for (const Point &neighbor : enterpoints) {
@@ -120,7 +120,7 @@ public:
     enterpoints.emplace_back(ep_, distance_(query, points_[ep_]));
 
     for (layer_t l = top_layer_; l >= 0; l--) {
-      MaxPointHeap candidates = SearchLayer(query, enterpoints, ef_construction_, l);
+      MaxHeap candidates = SearchLayer(query, enterpoints, ef_construction_, l);
       if (l == 0) {
         enterpoints = SelectNeighborsHeuristic(query, candidates, K);
       } else {
@@ -131,9 +131,9 @@ public:
     return enterpoints;
   }
 
-  MaxPointHeap SearchLayer(const float *q, const PointSet &ep, uint32_t ef, uint32_t layer) {
-    MaxPointHeap result;  // max heap
-    MinPointHeap candidates; // min heap
+  MaxHeap SearchLayer(const float *q, const PointSet &ep, uint32_t ef, uint32_t layer) {
+    MaxHeap result;  // max heap
+    MinHeap candidates; // min heap
     unordered_map<index_t, bool> visited;
 
     for (uint32_t i = 0; i < ep.size(); i++) {
@@ -171,7 +171,7 @@ public:
   }
 
   // simple select
-  PointSet SelectNeighbors(const float *q, MaxPointHeap &candidates, uint32_t M) {
+  PointSet SelectNeighbors(const float *q, MaxHeap &candidates, uint32_t M) {
     while (candidates.size() > M) {
       candidates.pop();
     }
@@ -188,12 +188,12 @@ public:
     if (candidates.size() <= M) {
       return candidates;
     }
-    MaxPointHeap candidates_heap(candidates.begin(), candidates.end());
+    MaxHeap candidates_heap(candidates.begin(), candidates.end());
     return SelectNeighbors(q, candidates_heap, M);
   }
 
   // heuristic algo
-  PointSet SelectNeighborsHeuristic(const float *q, MaxPointHeap &candidates,
+  PointSet SelectNeighborsHeuristic(const float *q, MaxHeap &candidates,
                                     uint32_t M, bool keep_pruned = true) {
     if (candidates.size() <= M) {
       PointSet selected_points;
@@ -204,14 +204,14 @@ public:
       return selected_points;
     }
 
-    MinPointHeap closest_candidates;
+    MinHeap closest_candidates;
     while (!candidates.empty()) {
       closest_candidates.push(candidates.top());
       candidates.pop();
     }
 
     PointSet selected_points;
-    MinPointHeap discarded_points;
+    MinHeap discarded_points;
     while (!closest_candidates.empty()) {
       Point p = closest_candidates.top();
       closest_candidates.pop();
@@ -245,7 +245,7 @@ public:
     if (candidates.size() <= M) {
       return candidates;
     }
-    MaxPointHeap candidates_heap(candidates.begin(), candidates.end());
+    MaxHeap candidates_heap(candidates.begin(), candidates.end());
     return SelectNeighborsHeuristic(q, candidates_heap, M, keep_pruned);
   }
 

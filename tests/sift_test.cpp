@@ -9,8 +9,8 @@
 #include "bruteforce.hpp"
 #include "distance.hpp"
 
-void fvecs_read(char *filename, float *&data, uint32_t &num_vectors, int &dim);
-void ivecs_read(char *filename, int *&data, uint32_t &num_vectors, int &dim);
+float *fvecs_read(char *filename, uint32_t &num_vectors, int &dim);
+int *ivecs_read(char *filename, uint32_t &num_vectors, int &dim);
 
 using namespace std::chrono;
 
@@ -21,21 +21,18 @@ double ComputeRecall(uint32_t num, int K, const int *gt,
                      const std::vector<PointSet> &points);
 
 int main(int argc, char **argv) {
-  int *gt_data;
-  float *base_data, *query_data;
   uint32_t num_bases, num_queries, num_gts;
   int dim, K;
 
   assert(argc == 4 && "Usage: sift_test dataset_path query_path groundtruth_path");
-
-  fvecs_read(argv[1], base_data, num_bases, dim);
-  fvecs_read(argv[2], query_data, num_queries, dim);
-  ivecs_read(argv[3], gt_data, num_gts, K);
+  float *base_data = fvecs_read(argv[1], num_bases, dim);
+  float *query_data = fvecs_read(argv[2], num_queries, dim);
+  int *gt_data = ivecs_read(argv[3], num_gts, K);
   assert(num_gts == num_queries && "#GT must be equal to #queries");
 
-  const uint32_t M = 16;
-  const uint32_t ef = 1;
-  const uint32_t ef_construction = 32;
+  const uint32_t M = 32;
+  const uint32_t ef = 10;
+  const uint32_t ef_construction = 40;
 
   hnsw::L2Distance distance(dim);
   hnsw::HNSWIndex hnsw_index(base_data, num_bases, dim, distance,
@@ -102,14 +99,14 @@ double ComputeRecall(uint32_t num, int K, const int *gt,
 }
 
 
-void fvecs_read(char *filename, float *&data, uint32_t &num_vectors, int &dim) {
+float *fvecs_read(char *filename, uint32_t &num_vectors, int &dim) {
   printf("Loading data from %s\n", filename);
   std::ifstream in(filename, std::ios::binary);
 
   if (!in.is_open()) {
     printf("Cannot open file: %s\n", filename);
     exit(1);
-    return;
+    return nullptr;
   }
 
   // Get #dimensions
@@ -122,7 +119,7 @@ void fvecs_read(char *filename, float *&data, uint32_t &num_vectors, int &dim) {
 
   // fisze = (4 + 4d) * n
   num_vectors = fsize / (1 + dim) / 4;
-  data = new float[num_vectors * dim];
+  float *data = new float[num_vectors * dim];
 
   in.seekg(0, std::ios::beg);
   for (size_t i = 0; i < num_vectors; i++) {
@@ -132,10 +129,10 @@ void fvecs_read(char *filename, float *&data, uint32_t &num_vectors, int &dim) {
   in.close();
 
   printf("Data size: (%u, %d)\n", num_vectors, dim);
+  return data;
 }
 
-void ivecs_read(char *filename, int *&data, uint32_t &num_vectors, int &dim) {
-  float *data_float;
-  fvecs_read(filename, data_float, num_vectors, dim);
-  data = reinterpret_cast<int *>(data_float);
+int *ivecs_read(char *filename, uint32_t &num_vectors, int &dim) {
+  float *data = fvecs_read(filename, num_vectors, dim);
+  return reinterpret_cast<int *>(data);
 }
