@@ -14,11 +14,10 @@
 
 namespace hnsw {
 
-template <typename T>
 class Distance {
 public:
   Distance(size_t dim) : dim_(dim) {}
-  virtual T operator() (const T *p1, const T *p2) const = 0;
+  virtual float operator() (const float *p1, const float *p2) const = 0;
   virtual ~Distance() = default;
 
   mutable size_t num = 0;
@@ -27,16 +26,12 @@ protected:
   const size_t dim_;
 };
 
-template <typename T>
-class L2Distance : public Distance<T> {
-  using Distance<T>::dim_;
 
+class L2Distance : public Distance {
 public:
-  using Distance<T>::num;
+  L2Distance(size_t dim) : Distance(dim) {}
 
-  L2Distance(size_t dim) : Distance<T>(dim) {}
-
-  T operator() (const T *p1, const T *p2) const {
+  float operator() (const float *p1, const float *p2) const {
     num += 1;
 #ifndef __AVX__
     return Sqr_(p1, p2, dim_);
@@ -77,28 +72,23 @@ public:
   }
 
 private:
-  T Sqr_(const T *p1, const T *p2, uint32_t size) const {
+  float Sqr_(const float *p1, const float *p2, uint32_t size) const {
     // Auto vectorized with -O3 flag
-    T sum = 0;
+    float sum = 0;
     for (size_t i = 0; i < size; i++) {
-      T tmp = p1[i] - p2[i];
+      float tmp = p1[i] - p2[i];
       sum += tmp * tmp;
     }
     return sum;
   }
 };
 
-template <typename T>
-class L1Distance : public Distance<T> {
-  using Distance<T>::dim_;
-
+class L1Distance : public Distance {
 public:
-  using Distance<T>::num;
-
-  L1Distance(size_t dim) : Distance<T>(dim) {}
-  T operator()(const T *p1, const T *p2) const {
+  L1Distance(size_t dim) : Distance(dim) {}
+  float operator()(const float *p1, const float *p2) const {
     num += 1;
-    T sum = 0;
+    float sum = 0;
     for (size_t i = 0; i < dim_; i++) {
       sum += fabs(p1[i] - p2[i]);
     }

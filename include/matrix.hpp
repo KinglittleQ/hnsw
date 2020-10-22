@@ -6,10 +6,9 @@
 
 namespace hnsw {
 
-template <typename T>
 class Matrix {
 public:
-  explicit Matrix(const T *data_ptr, size_t n_rows, size_t n_cols) {
+  explicit Matrix(const float *data_ptr, size_t n_rows, size_t n_cols) {
     data_ = data_ptr;
     rows_ = n_rows;
     cols_ = n_cols;
@@ -18,7 +17,7 @@ public:
     }
   }
 
-  const T *operator[](size_t row) const {
+  const float *operator[](size_t row) const {
     return row_ptrs_[row];
   }
 
@@ -35,9 +34,9 @@ public:
   }
 
 private:
-  const T *data_;
+  const float *data_;
   size_t rows_, cols_;
-  std::vector<const T *> row_ptrs_; 
+  std::vector<const float *> row_ptrs_; 
 };
 
 }  // end hnsw

@@ -23,12 +23,7 @@ using std::unordered_map;
 
 using layer_t = int32_t;
 
-template<typename T>
-class HNSWIndex : public Index<T> {
-  using typename Index<T>::Point;
-  using typename Index<T>::PointSet;
-  using typename Index<T>::PointLessComparator;
-  using typename Index<T>::PointGreaterComparator;
+class HNSWIndex : public Index {
   using MaxPointHeap = priority_queue<Point, PointSet, PointLessComparator>;
   using MinPointHeap = priority_queue<Point, PointSet, PointGreaterComparator>;
 
@@ -36,14 +31,14 @@ class HNSWIndex : public Index<T> {
     vector<PointSet> neighbors;  // edges in layers
     layer_t layer = 0;  // maximumn layer
 
-    void ConnectTo(const index_t neighbor, T distance, layer_t l) {
+    void ConnectTo(const index_t neighbor, float distance, layer_t l) {
       assert(l <= layer && "Too many layers");
       neighbors[l].emplace_back(neighbor, distance);
     }
   };
 
 public:
-  HNSWIndex(T *data, uint32_t n_points, uint32_t dim, const Distance<T> &distance,
+  HNSWIndex(float *data, uint32_t n_points, uint32_t dim, const Distance &distance,
             int M, int ef, int ef_construction) :
             points_(data, n_points, dim), distance_(distance) {
 
@@ -85,7 +80,7 @@ public:
       return;
     }
 
-    const T *query = points_[q];
+    const float *query = points_[q];
     PointSet enterpoints;
     enterpoints.emplace_back(ep_, distance_(query, points_[ep_]));
 
@@ -120,7 +115,7 @@ public:
     return;
   }
 
-  PointSet Search(uint32_t K, const T *query) {
+  PointSet Search(uint32_t K, const float *query) {
     PointSet enterpoints;
     enterpoints.emplace_back(ep_, distance_(query, points_[ep_]));
 
@@ -136,7 +131,7 @@ public:
     return enterpoints;
   }
 
-  MaxPointHeap SearchLayer(const T *q, const PointSet &ep, uint32_t ef, uint32_t layer) {
+  MaxPointHeap SearchLayer(const float *q, const PointSet &ep, uint32_t ef, uint32_t layer) {
     MaxPointHeap result;  // max heap
     MinPointHeap candidates; // min heap
     unordered_map<index_t, bool> visited;
@@ -161,7 +156,7 @@ public:
           continue;
         }
         visited[edge] = true;
-        T dist = distance_(points_[edge], q);
+        float dist = distance_(points_[edge], q);
         if (dist < result.top().second) {
           candidates.emplace(edge, dist);
           result.emplace(edge, dist);
@@ -176,7 +171,7 @@ public:
   }
 
   // simple select
-  PointSet SelectNeighbors(const T *q, MaxPointHeap &candidates, uint32_t M) {
+  PointSet SelectNeighbors(const float *q, MaxPointHeap &candidates, uint32_t M) {
     while (candidates.size() > M) {
       candidates.pop();
     }
@@ -189,7 +184,7 @@ public:
   }
 
   // simple select
-  PointSet SelectNeighbors(const T *q, PointSet &candidates, uint32_t M) {
+  PointSet SelectNeighbors(const float *q, PointSet &candidates, uint32_t M) {
     if (candidates.size() <= M) {
       return candidates;
     }
@@ -198,7 +193,7 @@ public:
   }
 
   // heuristic algo
-  PointSet SelectNeighborsHeuristic(const T *q, MaxPointHeap &candidates,
+  PointSet SelectNeighborsHeuristic(const float *q, MaxPointHeap &candidates,
                                     uint32_t M, bool keep_pruned = true) {
     if (candidates.size() <= M) {
       PointSet selected_points;
@@ -222,7 +217,7 @@ public:
       closest_candidates.pop();
       bool is_nearest = true;
       for (const auto &neighbor : selected_points) {
-        T dist = distance_(points_[p.first], points_[neighbor.first]);
+        float dist = distance_(points_[p.first], points_[neighbor.first]);
         if (dist < p.second) {
           is_nearest = false;
           break;
@@ -245,7 +240,7 @@ public:
     return selected_points;
   }
 
-  PointSet SelectNeighborsHeuristic(const T *q, PointSet &candidates, uint32_t M,
+  PointSet SelectNeighborsHeuristic(const float *q, PointSet &candidates, uint32_t M,
                                     bool keep_pruned = true) {
     if (candidates.size() <= M) {
       return candidates;
@@ -260,6 +255,8 @@ public:
     layer_t layer = static_cast<layer_t>(std::floor(x));
     return layer;
   }
+
+  void SetEfConstruction(uint32_t ef_construction) { ef_construction_ = ef_construction; }
 
   layer_t TopLayer() { return top_layer_; }
 
@@ -281,10 +278,10 @@ private:
   std::uniform_real_distribution<double> distribution_;
 
   // private data members
-  Matrix<T> points_;
+  Matrix points_;
   uint32_t num_points_{0};
   uint32_t dim_;
-  const Distance<T> &distance_;
+  const Distance &distance_;
 };
 
 

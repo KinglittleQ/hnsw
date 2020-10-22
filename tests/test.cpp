@@ -27,12 +27,12 @@ int main(void) {
 
   const uint32_t M = 16;
   const uint32_t ef = 10;
-  const uint32_t ef_construction = 200;
+  const uint32_t ef_construction = 50;
   const uint32_t K = 100;
 
-  hnsw::L2Distance<float> distance(dim);
-  hnsw::HNSWIndex<float> hnsw_index(points, n_points, dim, distance, M, ef, ef_construction);
-  hnsw::BruteForceIndex<float> bf_index(points, n_points, dim, distance);
+  hnsw::L2Distance distance(dim);
+  hnsw::HNSWIndex hnsw_index(points, n_points, dim, distance, M, ef, ef_construction);
+  hnsw::BruteForceIndex bf_index(points, n_points, dim, distance);
 
   // Test build
   auto t0 = std::chrono::steady_clock::now();
@@ -46,6 +46,8 @@ int main(void) {
   float *queries = new float[dim * n_queries];
   GenerateRandomFloat(queries, dim * n_queries);
 
+  hnsw_index.SetEfConstruction(256);
+
   std::vector<PointSet> result1(n_queries);
   t0 = std::chrono::steady_clock::now();
   for (uint32_t i = 0; i < n_queries; i++) {
@@ -53,7 +55,7 @@ int main(void) {
   }
   t1 = std::chrono::steady_clock::now();
   duration = duration_cast<microseconds>(t1 - t0).count();
-  cout << "Elapsed time: "<< duration << "µs" << endl;
+  cout << "HNSW: " << duration / n_queries << " µs/query" << endl;
 
   std::vector<PointSet> result2(n_queries);
   t0 = std::chrono::steady_clock::now();
@@ -62,9 +64,9 @@ int main(void) {
   }
   t1 = std::chrono::steady_clock::now();
   duration = duration_cast<microseconds>(t1 - t0).count();
-  cout << "Elapsed time: "<< duration << "µs" << endl;
+  cout << "BruteForce: "<< duration / n_queries << " µs/query" << endl;
 
-  cout << "Recall: " << ComputeRecall(result2, result1) << endl;
+  cout << "Recall@100: " << ComputeRecall(result2, result1) << endl;
 
   delete points;
   delete queries;

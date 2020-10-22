@@ -9,15 +9,11 @@
 
 namespace hnsw {
 
-template <typename T>
-class BruteForceIndex : public Index<T> {
-  using typename Index<T>::Point;
-  using typename Index<T>::PointSet;
-  using typename Index<T>::PointLessComparator;
+class BruteForceIndex : public Index {
   using MaxPointHeap = std::priority_queue<Point, PointSet, PointLessComparator>;
 
 public:
-  BruteForceIndex(const T *data, uint32_t n_points, uint32_t dim, const Distance<T> &distance) :
+  BruteForceIndex(const float *data, uint32_t n_points, uint32_t dim, const Distance &distance) :
                   points_(data, n_points, dim), num_points_(n_points),
                   dim_(dim), distance_(distance) {}
 
@@ -25,10 +21,10 @@ public:
 
   void Build() {}
 
-  PointSet Search(uint32_t K, const T *query) {
+  PointSet Search(uint32_t K, const float *query) {
     MaxPointHeap result;
     for (uint32_t i = 0; i < num_points_; i++) {
-      T dist = distance_(query, points_[i]);
+      float dist = distance_(query, points_[i]);
       result.emplace(i, dist);
       if (result.size() > K) {
         result.pop();
@@ -44,10 +40,10 @@ public:
   }
 
 private:
-  Matrix<T> points_;
+  Matrix points_;
   uint32_t num_points_;
   uint32_t dim_;
-  const Distance<T> &distance_;
+  const Distance &distance_;
 };
 
 }  // end hnsw

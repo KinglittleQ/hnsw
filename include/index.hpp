@@ -8,10 +8,9 @@ namespace hnsw {
 
 using index_t = uint32_t;
 
-template<typename T>
 class Index {
 protected:
-  using Point = std::pair<index_t, T>;
+  using Point = std::pair<index_t, float>;
   using PointSet = std::vector<Point>;
 
   struct PointLessComparator {
@@ -29,7 +28,7 @@ protected:
 public:
   Index() = default;
   virtual void Build() = 0;
-  virtual PointSet Search(uint32_t K, const T *query) = 0;
+  virtual PointSet Search(uint32_t K, const float *query) = 0;
   virtual ~Index() = default;
 };
 
