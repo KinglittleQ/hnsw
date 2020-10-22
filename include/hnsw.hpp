@@ -13,6 +13,7 @@
 #include <queue>
 #include <unordered_map>
 #include <iostream>
+#include <fstream>
 
 namespace hnsw {
 
@@ -259,6 +260,53 @@ public:
   void SetEfConstruction(uint32_t ef_construction) { ef_construction_ = ef_construction; }
 
   layer_t TopLayer() { return top_layer_; }
+
+  void SaveIndex(const char *filename) {
+    std::ofstream os(filename, std::ios::binary | std::ios::out);
+    os.write((char *)&num_points_, sizeof(index_t));
+
+    for (index_t i = 0; i < num_points_; i++) {
+      os.write((char *)&i, sizeof(index_t));
+      os.write((char *)&vertices_[i].layer, sizeof(layer_t));
+      for (const auto &neighbors : vertices_[i].neighbors) {
+        index_t num_neighbors = neighbors.size();
+        os.write((char *)&num_neighbors, sizeof(index_t));
+        os.write((char *)neighbors.data(), sizeof(Point) * num_neighbors);
+      }
+    }
+    os.close();
+    printf("Saved index to %s\n", filename);
+  }
+
+  void LoadIndex(const char *filename) {
+    printf("Loading index from %s\n", filename);
+
+    std::ifstream is(filename, std::ios::binary | std::ios::in);
+    is.read((char *)&num_points_, sizeof(index_t));
+    vertices_.resize(num_points_);
+
+    ep_ = 0;
+    top_layer_ = 0;
+    for (uint32_t i = 0; i < num_points_; i++) {
+      index_t idx;
+      is.read((char *)&idx, sizeof(index_t));
+      is.read((char *)&vertices_[idx].layer, sizeof(layer_t));
+      vertices_[idx].neighbors.resize(vertices_[idx].layer + 1);
+      for (auto &neighbors : vertices_[idx].neighbors) {
+        index_t num_neighbors;
+        is.read((char *)&num_neighbors, sizeof(index_t));
+        neighbors.resize(num_neighbors);
+        is.read((char *)neighbors.data(), sizeof(Point) * num_neighbors);
+      }
+
+      if (vertices_[idx].layer > top_layer_) {
+        top_layer_ = vertices_[idx].layer;
+        ep_ = idx;
+      }
+    }
+    is.close();
+    printf("Loaded %u points into index\n", num_points_);
+  }
 
 private:
   // private parameters

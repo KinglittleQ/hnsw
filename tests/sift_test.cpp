@@ -9,8 +9,8 @@
 #include "bruteforce.hpp"
 #include "distance.hpp"
 
-float *fvecs_read(char *filename, uint32_t &num_vectors, int &dim);
-int *ivecs_read(char *filename, uint32_t &num_vectors, int &dim);
+void read_fvecs(char *filename, float *&data, uint32_t &num_vectors, int &dim);
+void read_ivecs(char *filename, int *&data, uint32_t &num_vectors, int &dim);
 
 using namespace std::chrono;
 
@@ -21,13 +21,15 @@ double ComputeRecall(uint32_t num, int K, const int *gt,
                      const std::vector<PointSet> &points);
 
 int main(int argc, char **argv) {
+  float *base_data, *query_data;
+  int *gt_data;
   uint32_t num_bases, num_queries, num_gts;
   int dim, K;
 
-  assert(argc == 4 && "Usage: sift_test dataset_path query_path groundtruth_path");
-  float *base_data = fvecs_read(argv[1], num_bases, dim);
-  float *query_data = fvecs_read(argv[2], num_queries, dim);
-  int *gt_data = ivecs_read(argv[3], num_gts, K);
+  assert(argc >= 4 && "Usage: sift_test dataset_path query_path groundtruth_path index_path");
+  read_fvecs(argv[1], base_data, num_bases, dim);
+  read_fvecs(argv[2], query_data, num_queries, dim);
+  read_ivecs(argv[3], gt_data, num_gts, K);
   assert(num_gts == num_queries && "#GT must be equal to #queries");
 
   const uint32_t M = 32;
@@ -38,24 +40,30 @@ int main(int argc, char **argv) {
   hnsw::HNSWIndex hnsw_index(base_data, num_bases, dim, distance,
                              M, ef, ef_construction);
 
-  // Test build
-  auto t0 = steady_clock::now();
-  hnsw_index.Build();
-  auto t1 = steady_clock::now();
-  auto duration = duration_cast<milliseconds>(t1 - t0).count();
-  printf("HNSW Build time: %ldms\n", duration);
-  printf("Top layer: %d\n", hnsw_index.TopLayer());
-  printf("Distance calculations: %ld\n", distance.num);
+  if (argc == 5) {
+    hnsw_index.LoadIndex(argv[4]);
+  } else {
+    // Test build
+    auto t0 = steady_clock::now();
+    hnsw_index.Build();
+    auto t1 = steady_clock::now();
+    auto duration = duration_cast<milliseconds>(t1 - t0).count();
+    printf("HNSW Build time: %ldms\n", duration);
+    printf("Top layer: %d\n", hnsw_index.TopLayer());
+    printf("Distance calculations: %ld\n", distance.num);
+
+    hnsw_index.SaveIndex("index.bin");
+  }
 
   printf("Searching ...\n");
   hnsw_index.SetEfConstruction(256);
   std::vector<PointSet> result(num_queries);
-  t0 = steady_clock::now();
+  auto t0 = steady_clock::now();
   for (uint32_t i = 0; i < num_queries; i++) {
     result[i] = hnsw_index.Search(K, &query_data[i * dim]);
   }
-  t1 = steady_clock::now();
-  duration = duration_cast<microseconds>(t1 - t0).count();
+  auto t1 = steady_clock::now();
+  auto duration = duration_cast<microseconds>(t1 - t0).count();
   printf("HNSW search speed: %ld µs/query\n", duration / num_queries);
 
   printf("Evaluating ...\n");
@@ -99,14 +107,14 @@ double ComputeRecall(uint32_t num, int K, const int *gt,
 }
 
 
-float *fvecs_read(char *filename, uint32_t &num_vectors, int &dim) {
+void read_fvecs(char *filename, float *&data, uint32_t &num_vectors, int &dim) {
   printf("Loading data from %s\n", filename);
   std::ifstream in(filename, std::ios::binary);
 
   if (!in.is_open()) {
     printf("Cannot open file: %s\n", filename);
     exit(1);
-    return nullptr;
+    return;
   }
 
   // Get #dimensions
@@ -119,7 +127,7 @@ float *fvecs_read(char *filename, uint32_t &num_vectors, int &dim) {
 
   // fisze = (4 + 4d) * n
   num_vectors = fsize / (1 + dim) / 4;
-  float *data = new float[num_vectors * dim];
+  data = new float[num_vectors * dim];
 
   in.seekg(0, std::ios::beg);
   for (size_t i = 0; i < num_vectors; i++) {
@@ -129,10 +137,12 @@ float *fvecs_read(char *filename, uint32_t &num_vectors, int &dim) {
   in.close();
 
   printf("Data size: (%u, %d)\n", num_vectors, dim);
-  return data;
+  return;
 }
 
-int *ivecs_read(char *filename, uint32_t &num_vectors, int &dim) {
-  float *data = fvecs_read(filename, num_vectors, dim);
-  return reinterpret_cast<int *>(data);
+void read_ivecs(char *filename, int *&data, uint32_t &num_vectors, int &dim) {
+  float *data_float;
+  read_fvecs(filename, data_float, num_vectors, dim);
+  data = reinterpret_cast<int *>(data_float);
+  return;
 }
