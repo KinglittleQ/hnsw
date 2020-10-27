@@ -1,5 +1,5 @@
-#ifndef __HMSW_DISTANCE_HPP__
-#define __HMSW_DISTANCE_HPP__
+#ifndef __HNSW_DISTANCE_HPP__
+#define __HNSW_DISTANCE_HPP__
 
 #include <cmath>
 #include <cassert>

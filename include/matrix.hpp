@@ -1,5 +1,5 @@
-#ifndef __HMSW_MATRIX_HPP__
-#define __HMSW_MATRIX_HPP__
+#ifndef __HNSW_MATRIX_HPP__
+#define __HNSW_MATRIX_HPP__
 
 #include <iostream>
 #include <vector>

@@ -1,5 +1,5 @@
-#ifndef __HMSW_HNSW_HPP__
-#define __HMSW_HNSW_HPP__
+#ifndef __HNSW_HNSW_HPP__
+#define __HNSW_HNSW_HPP__
 
 #include "distance.hpp"
 #include "matrix.hpp"

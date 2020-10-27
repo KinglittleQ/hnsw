@@ -1,5 +1,5 @@
-#ifndef __HMSW_INDEX_HPP__
-#define __HMSW_INDEX_HPP__
+#ifndef __HNSW_INDEX_HPP__
+#define __HNSW_INDEX_HPP__
 
 #include <cstdint>
 #include <vector>

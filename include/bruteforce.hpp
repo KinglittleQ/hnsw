@@ -1,5 +1,5 @@
-#ifndef __HMSW_BRUTEFORCE_HPP__
-#define __HMSW_BRUTEFORCE_HPP__
+#ifndef __HNSW_BRUTEFORCE_HPP__
+#define __HNSW_BRUTEFORCE_HPP__
 
 #include "matrix.hpp"
 #include "index.hpp"
