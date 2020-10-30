@@ -11,7 +11,7 @@
 #include <vector>
 #include <random>
 #include <queue>
-#include <unordered_map>
+#include <unordered_set>
 #include <iostream>
 #include <fstream>
 
@@ -20,7 +20,7 @@ namespace hnsw {
 using std::vector;
 using std::pair;
 using std::priority_queue;
-using std::unordered_map;
+using std::unordered_set;
 
 using layer_t = int32_t;
 
@@ -135,10 +135,10 @@ public:
   MaxHeap SearchLayer(const float *q, const PointSet &ep, uint32_t ef, uint32_t layer) {
     MaxHeap result;  // max heap
     MinHeap candidates; // min heap
-    unordered_map<index_t, bool> visited;
+    unordered_set<index_t> visited;
 
     for (uint32_t i = 0; i < ep.size(); i++) {
-      visited[ep[i].first] = true;
+      visited.insert(ep[i].first);
       candidates.push(ep[i]);
       result.push(ep[i]);
     }
@@ -156,7 +156,7 @@ public:
         if (visited.count(edge) != 0) {
           continue;
         }
-        visited[edge] = true;
+        visited.insert(edge);
         float dist = distance_(points_[edge], q);
         if (dist < result.top().second) {
           candidates.emplace(edge, dist);
