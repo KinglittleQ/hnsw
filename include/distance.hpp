@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cassert>
+#include <cstdint>
 #include <immintrin.h>
 
 #define AVX_L2SQR(addr1, addr2, dest, tmp1, tmp2) \
