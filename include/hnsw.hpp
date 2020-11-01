@@ -12,9 +12,9 @@
 #include <random>
 #include <queue>
 #include <algorithm>
-#include <unordered_set>
 #include <iostream>
 #include <fstream>
+#include <boost/dynamic_bitset.hpp>
 
 #define PREFETCH_DATA
 
@@ -23,7 +23,7 @@ namespace hnsw {
 using std::vector;
 using std::pair;
 using std::priority_queue;
-using std::unordered_set;
+using boost::dynamic_bitset;
 
 using layer_t = int32_t;
 
@@ -69,6 +69,7 @@ public:
     dim_ = dim;
 
     vertices_.resize(n_points);
+    visited_.resize(n_points);
   }
 
   ~HNSWIndex() = default;
@@ -91,6 +92,7 @@ public:
     vertex.neighbors[0].reserve(maxM0_);
 
     num_points_ += 1;
+
     if (num_points_ == 1) {
       top_layer_ = vertex.layer;
       ep_ = q;
@@ -161,9 +163,10 @@ public:
   MaxHeap SearchLayer(const float *q, const Point &ep, uint32_t ef, uint32_t layer) {
     MaxHeap result;  // max heap
     MinHeap candidates; // min heap
-    unordered_set<index_t> visited;
+    visited_.reset();
+    result.Container().reserve(ef);
 
-    visited.insert(ep.first);
+    visited_.set(ep.first);
     candidates.push(ep);
     result.push(ep);
 
@@ -178,7 +181,7 @@ public:
 #ifdef PREFETCH_DATA
       // prefetech into cache
       for (const Point &neighbor : vertices_[p.first].neighbors[layer]) {
-        if (visited.count(neighbor.first) == 0) {
+        if (!visited_.test(neighbor.first)) {
           _mm_prefetch(points_[neighbor.first], _MM_HINT_T0);
         }
       }
@@ -186,10 +189,10 @@ public:
 
       for (const Point &neighbor : vertices_[p.first].neighbors[layer]) {
         const index_t &edge = neighbor.first;
-        if (visited.count(edge) != 0) {
+        if (visited_.test(neighbor.first)) {
           continue;
         }
-        visited.insert(edge);
+        visited_.set(edge);
         float dist = distance_(points_[edge], q);
         if (result.size() < ef || dist < result.top().second) {
           candidates.emplace(edge, dist);
@@ -210,6 +213,7 @@ public:
       candidates.pop();
     }
     PointSet result;
+    result.reserve(M);
     while (!candidates.empty()) {
       result.push_back(candidates.top());
       candidates.pop();
@@ -225,6 +229,7 @@ public:
     MinHeap closest_points(candidates.begin(), candidates.end());
 
     PointSet selected_points;
+    selected_points.reserve(M);
     while (!closest_points.empty()) {
       Point p = closest_points.top();
       closest_points.pop();
@@ -327,6 +332,7 @@ private:
   index_t ep_;  // enter point at the top layer
   layer_t top_layer_{0};    // top layer
   vector<Vertex> vertices_;
+  dynamic_bitset<> visited_;
 
   std::default_random_engine generator_;
   std::uniform_real_distribution<double> distribution_;
