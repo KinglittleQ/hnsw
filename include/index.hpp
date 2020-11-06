@@ -11,15 +11,11 @@ using Point = std::pair<index_t, float>;
 using PointSet = std::vector<Point>;
 
 struct PointLessComparator {
-  bool operator() (const Point &a, const Point &b) {
-    return a.second < b.second;
-  }
+  bool operator()(const Point &a, const Point &b) { return a.second < b.second; }
 };
 
 struct PointGreaterComparator {
-  bool operator() (const Point &a, const Point &b) {
-    return a.second > b.second;
-  }
+  bool operator()(const Point &a, const Point &b) { return a.second > b.second; }
 };
 
 class Index {
@@ -30,6 +26,6 @@ public:
   virtual ~Index() = default;
 };
 
-} // end hnsw
+}  // namespace hnsw
 
 #endif

@@ -17,9 +17,7 @@ public:
     }
   }
 
-  const float *operator[](size_t row) const {
-    return row_ptrs_[row];
-  }
+  const float *operator[](size_t row) const { return row_ptrs_[row]; }
 
   size_t Rows() { return rows_; }
   size_t Cols() { return cols_; }
@@ -36,9 +34,9 @@ public:
 private:
   const float *data_;
   size_t rows_, cols_;
-  std::vector<const float *> row_ptrs_; 
+  std::vector<const float *> row_ptrs_;
 };
 
-}  // end hnsw
+}  // namespace hnsw
 
 #endif

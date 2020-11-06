@@ -1,9 +1,9 @@
 #ifndef __HNSW_BRUTEFORCE_HPP__
 #define __HNSW_BRUTEFORCE_HPP__
 
-#include "matrix.hpp"
-#include "index.hpp"
 #include "distance.hpp"
+#include "index.hpp"
+#include "matrix.hpp"
 
 #include <queue>
 
@@ -13,9 +13,8 @@ class BruteForceIndex : public Index {
   using MaxPointHeap = std::priority_queue<Point, PointSet, PointLessComparator>;
 
 public:
-  BruteForceIndex(const float *data, uint32_t n_points, uint32_t dim, const Distance &distance) :
-                  points_(data, n_points, dim), num_points_(n_points),
-                  dim_(dim), distance_(distance) {}
+  BruteForceIndex(const float *data, uint32_t n_points, uint32_t dim, const Distance &distance)
+      : points_(data, n_points, dim), num_points_(n_points), dim_(dim), distance_(distance) {}
 
   ~BruteForceIndex() = default;
 
@@ -46,6 +45,6 @@ private:
   const Distance &distance_;
 };
 
-}  // end hnsw
+}  // namespace hnsw
 
 #endif

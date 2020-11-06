@@ -1,24 +1,24 @@
 #ifndef __HNSW_DISTANCE_HPP__
 #define __HNSW_DISTANCE_HPP__
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <immintrin.h>
 
-#define AVX_L2SQR(addr1, addr2, dest, tmp1, tmp2) \
-    tmp1 = _mm256_loadu_ps(addr1); \
-    tmp2 = _mm256_loadu_ps(addr2); \
-    tmp1 = _mm256_sub_ps(tmp1, tmp2); \
-    tmp1 = _mm256_mul_ps(tmp1, tmp1); \
-    dest = _mm256_add_ps(dest, tmp1);
+#define AVX_L2SQR(addr1, addr2, dest, tmp1, tmp2)                                                                      \
+  tmp1 = _mm256_loadu_ps(addr1);                                                                                       \
+  tmp2 = _mm256_loadu_ps(addr2);                                                                                       \
+  tmp1 = _mm256_sub_ps(tmp1, tmp2);                                                                                    \
+  tmp1 = _mm256_mul_ps(tmp1, tmp1);                                                                                    \
+  dest = _mm256_add_ps(dest, tmp1);
 
 namespace hnsw {
 
 class Distance {
 public:
   Distance(size_t dim) : dim_(dim) {}
-  virtual float operator() (const float *p1, const float *p2) const = 0;
+  virtual float operator()(const float *p1, const float *p2) const = 0;
   virtual ~Distance() = default;
 
   mutable size_t num = 0;
@@ -27,12 +27,11 @@ protected:
   const size_t dim_;
 };
 
-
 class L2Distance : public Distance {
 public:
   L2Distance(size_t dim) : Distance(dim) {}
 
-  float operator() (const float *p1, const float *p2) const {
+  float operator()(const float *p1, const float *p2) const {
     num += 1;
 #ifndef __AVX__
     return Sqr_(p1, p2, dim_);
@@ -45,7 +44,7 @@ public:
     unsigned aligned_size = dim_ - residual_size;
     const float *residual_start1 = p1 + aligned_size;
     const float *residual_start2 = p2 + aligned_size;
-    float unpack[8] __attribute__ ((aligned (32))) = {0, 0, 0, 0, 0, 0, 0, 0};
+    float unpack[8] __attribute__((aligned(32))) = {0, 0, 0, 0, 0, 0, 0, 0};
 
     sum = _mm256_loadu_ps(unpack);
 
@@ -55,15 +54,14 @@ public:
       AVX_L2SQR(ptr1, ptr2, sum, tmp0, tmp1);
       AVX_L2SQR(ptr1 + 8, ptr2 + 8, sum, tmp0, tmp1);
     }
-    if ( residual_size >= 8 ) {
+    if (residual_size >= 8) {
       AVX_L2SQR(residual_start1, residual_start2, sum, tmp0, tmp1);
       residual_size -= 8;
       residual_start1 += 8;
       residual_start2 += 8;
     }
     _mm256_storeu_ps(unpack, sum);
-    result = unpack[0] + unpack[1] + unpack[2] + unpack[3] + \
-             unpack[4] + unpack[5] + unpack[6] + unpack[7];
+    result = unpack[0] + unpack[1] + unpack[2] + unpack[3] + unpack[4] + unpack[5] + unpack[6] + unpack[7];
 
     if (residual_size > 0) {
       result += Sqr_(residual_start1, residual_start2, residual_size);
@@ -97,6 +95,6 @@ public:
   }
 };
 
-}  // hnsw
+}  // namespace hnsw
 
 #endif

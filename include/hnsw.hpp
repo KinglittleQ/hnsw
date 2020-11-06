@@ -2,28 +2,28 @@
 #define __HNSW_HNSW_HPP__
 
 #include "distance.hpp"
-#include "matrix.hpp"
 #include "index.hpp"
+#include "matrix.hpp"
 
-#include <cassert>
-#include <memory>
-#include <cmath>
-#include <vector>
-#include <random>
-#include <queue>
 #include <algorithm>
-#include <iostream>
-#include <fstream>
 #include <boost/dynamic_bitset.hpp>
+#include <cassert>
+#include <cmath>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <queue>
+#include <random>
+#include <vector>
 
 #define PREFETCH_DATA
 
 namespace hnsw {
 
-using std::vector;
+using boost::dynamic_bitset;
 using std::pair;
 using std::priority_queue;
-using boost::dynamic_bitset;
+using std::vector;
 
 using layer_t = int32_t;
 
@@ -32,21 +32,22 @@ using MinHeapImpl = priority_queue<Point, PointSet, PointGreaterComparator>;
 
 class MaxHeap : public MaxHeapImpl {
   using MaxHeapImpl::MaxHeapImpl;
- public:
+
+public:
   PointSet &Container() { return this->c; }
 };
 
 class MinHeap : public MinHeapImpl {
   using MinHeapImpl::MinHeapImpl;
- public:
+
+public:
   PointSet &Container() { return this->c; }
 };
 
 class HNSWIndex : public Index {
-
   struct Vertex {
     vector<PointSet> neighbors;  // edges in layers
-    layer_t layer = 0;  // maximumn layer
+    layer_t layer = 0;           // maximumn layer
 
     void ConnectTo(const index_t neighbor, float distance, layer_t l) {
       assert(l <= layer && "Too many layers");
@@ -55,10 +56,8 @@ class HNSWIndex : public Index {
   };
 
 public:
-  HNSWIndex(float *data, uint32_t n_points, uint32_t dim, const Distance &distance,
-            int M, int ef_construction) :
-            points_(data, n_points, dim), distance_(distance) {
-
+  HNSWIndex(float *data, uint32_t n_points, uint32_t dim, const Distance &distance, int M, int ef_construction)
+      : points_(data, n_points, dim), distance_(distance) {
     top_layer_ = 0;
     M_ = M;
     maxM_ = M;
@@ -82,8 +81,7 @@ public:
 
   void Insert(index_t q) {
     Vertex &vertex = vertices_[q];
-    assert(vertex.layer == 0 && vertex.neighbors.size() == 0
-           && "Vertex has already been inserted");
+    assert(vertex.layer == 0 && vertex.neighbors.size() == 0 && "Vertex has already been inserted");
     vertex.layer = RandomChoiceLayer();
     vertex.neighbors.resize(vertex.layer + 1);
     for (auto iter = vertex.neighbors.begin() + 1; iter != vertex.neighbors.end(); iter++) {
@@ -161,8 +159,8 @@ public:
   }
 
   MaxHeap SearchLayer(const float *q, const Point &ep, uint32_t ef, uint32_t layer) {
-    MaxHeap result;  // max heap
-    MinHeap candidates; // min heap
+    MaxHeap result;      // max heap
+    MinHeap candidates;  // min heap
     visited_.reset();
     result.Container().reserve(ef);
 
@@ -321,16 +319,16 @@ public:
 
 private:
   // private parameters
-  uint32_t M_;      // number of connections to be inserted to one node at one layer
-  uint32_t maxM_;   // maximumn number of neighbors of one node at one layer except layer 0
-  uint32_t maxM0_;  // maximumn number of neighbors of one node at layer 0
-  double ml_;  // parameter of distribution to decide maximumn layer l. Autoselect ml = 1 / ln(M);
-  uint32_t ef_search_;     // number of neighbors to find while searching
+  uint32_t M_;                // number of connections to be inserted to one node at one layer
+  uint32_t maxM_;             // maximumn number of neighbors of one node at one layer except layer 0
+  uint32_t maxM0_;            // maximumn number of neighbors of one node at layer 0
+  double ml_;                 // parameter of distribution to decide maximumn layer l. Autoselect ml = 1 / ln(M);
+  uint32_t ef_search_;        // number of neighbors to find while searching
   uint32_t ef_construction_;  // number of neighbors to find while constructing graph
 
   // inner variables
-  index_t ep_;  // enter point at the top layer
-  layer_t top_layer_{0};    // top layer
+  index_t ep_;            // enter point at the top layer
+  layer_t top_layer_{0};  // top layer
   vector<Vertex> vertices_;
   dynamic_bitset<> visited_;
 
@@ -344,8 +342,6 @@ private:
   const Distance &distance_;
 };
 
-
-}  // end hnsw
-
+}  // namespace hnsw
 
 #endif

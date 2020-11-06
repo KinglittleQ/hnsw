@@ -1,13 +1,13 @@
-#include <iostream>
-#include <random>
-#include <chrono>
-#include <vector>
-#include <set>
-#include <fstream>
-
-#include "hnsw.hpp"
 #include "bruteforce.hpp"
 #include "distance.hpp"
+#include "hnsw.hpp"
+
+#include <chrono>
+#include <fstream>
+#include <iostream>
+#include <random>
+#include <set>
+#include <vector>
 
 void read_fvecs(char *filename, float *&data, uint32_t &num_vectors, int &dim);
 void read_ivecs(char *filename, int *&data, uint32_t &num_vectors, int &dim);
@@ -17,8 +17,7 @@ using namespace std::chrono;
 using PointSet = std::vector<std::pair<uint32_t, float>>;
 
 void GenerateRandomFloat(float *data, size_t num);
-double ComputeRecall(uint32_t num, int K, const int *gt,
-                     const std::vector<PointSet> &points);
+double ComputeRecall(uint32_t num, int K, const int *gt, const std::vector<PointSet> &points);
 
 int main(int argc, char **argv) {
   float *base_data, *query_data;
@@ -37,8 +36,7 @@ int main(int argc, char **argv) {
   const uint32_t ef_construction = 40;
 
   hnsw::L2Distance distance(dim);
-  hnsw::HNSWIndex hnsw_index(base_data, num_bases, dim, distance,
-                             M, ef, ef_construction);
+  hnsw::HNSWIndex hnsw_index(base_data, num_bases, dim, distance, M, ef, ef_construction);
 
   if (argc == 5) {
     hnsw_index.LoadIndex(argv[4]);
@@ -87,11 +85,9 @@ void GenerateRandomFloat(float *data, size_t num) {
   }
 }
 
-double ComputeRecall(uint32_t num, int K, const int *gt,
-                     const std::vector<PointSet> &points) {
-
+double ComputeRecall(uint32_t num, int K, const int *gt, const std::vector<PointSet> &points) {
   int recalls = 0;
-  for  (size_t i = 0; i < num; i++) {
+  for (size_t i = 0; i < num; i++) {
     std::set<uint32_t> label;
     for (int j = 0; j < K; j++) {
       label.insert(gt[i * K + j]);
@@ -105,7 +101,6 @@ double ComputeRecall(uint32_t num, int K, const int *gt,
 
   return 1.0 * recalls / (num * K);
 }
-
 
 void read_fvecs(char *filename, float *&data, uint32_t &num_vectors, int &dim) {
   printf("Loading data from %s\n", filename);
