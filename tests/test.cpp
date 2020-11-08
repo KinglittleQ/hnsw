@@ -25,12 +25,12 @@ int main(void) {
   GenerateRandomFloat(points, dim * n_points);
 
   const uint32_t M = 16;
-  const uint32_t ef = 10;
+  const uint32_t ef_search = 256;
   const uint32_t ef_construction = 50;
   const uint32_t K = 100;
 
   hnsw::L2Distance distance(dim);
-  hnsw::HNSWIndex hnsw_index(points, n_points, dim, distance, M, ef, ef_construction);
+  hnsw::HNSWIndex hnsw_index(points, n_points, dim, distance, M, ef_construction);
   hnsw::BruteForceIndex bf_index(points, n_points, dim, distance);
 
   // Test build
@@ -45,7 +45,7 @@ int main(void) {
   float *queries = new float[dim * n_queries];
   GenerateRandomFloat(queries, dim * n_queries);
 
-  hnsw_index.SetEfConstruction(256);
+  hnsw_index.SetEfSearch(ef_search);
 
   std::vector<PointSet> result1(n_queries);
   t0 = std::chrono::steady_clock::now();

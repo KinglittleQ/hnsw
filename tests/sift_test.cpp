@@ -32,11 +32,11 @@ int main(int argc, char **argv) {
   assert(num_gts == num_queries && "#GT must be equal to #queries");
 
   const uint32_t M = 32;
-  const uint32_t ef = 10;
+  const uint32_t ef_search = 256;
   const uint32_t ef_construction = 40;
 
   hnsw::L2Distance distance(dim);
-  hnsw::HNSWIndex hnsw_index(base_data, num_bases, dim, distance, M, ef, ef_construction);
+  hnsw::HNSWIndex hnsw_index(base_data, num_bases, dim, distance, M, ef_construction);
 
   if (argc == 5) {
     hnsw_index.LoadIndex(argv[4]);
@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
   }
 
   printf("Searching ...\n");
-  hnsw_index.SetEfConstruction(256);
+  hnsw_index.SetEfSearch(ef_search);
   std::vector<PointSet> result(num_queries);
   auto t0 = steady_clock::now();
   for (uint32_t i = 0; i < num_queries; i++) {
