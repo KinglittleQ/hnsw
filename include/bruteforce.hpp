@@ -12,7 +12,7 @@ namespace hnsw {
 class BruteForceIndex : public Index {
   using MaxPointHeap = std::priority_queue<Point, PointSet, PointLessComparator>;
 
-public:
+ public:
   BruteForceIndex(const float *data, uint32_t n_points, uint32_t dim, const Distance &distance)
       : points_(data, n_points, dim), num_points_(n_points), dim_(dim), distance_(distance) {}
 
@@ -38,7 +38,7 @@ public:
     return neighbors;
   }
 
-private:
+ private:
   Matrix points_;
   uint32_t num_points_;
   uint32_t dim_;

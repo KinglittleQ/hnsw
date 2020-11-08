@@ -83,7 +83,8 @@ void GenerateRandomFloat(float *data, size_t num) {
   }
 }
 
-double ComputeRecall(const std::vector<PointSet> &groundtruth, const std::vector<PointSet> &points) {
+double ComputeRecall(const std::vector<PointSet> &groundtruth,
+                     const std::vector<PointSet> &points) {
   int num = 0;
   for (size_t i = 0; i < groundtruth.size(); i++) {
     std::set<uint32_t> label;

@@ -19,7 +19,7 @@ struct PointGreaterComparator {
 };
 
 class Index {
-public:
+ public:
   Index() = default;
   virtual void Build() = 0;
   virtual PointSet Search(uint32_t K, const float *query) = 0;

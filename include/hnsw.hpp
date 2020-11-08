@@ -33,14 +33,14 @@ using MinHeapImpl = priority_queue<Point, PointSet, PointGreaterComparator>;
 class MaxHeap : public MaxHeapImpl {
   using MaxHeapImpl::MaxHeapImpl;
 
-public:
+ public:
   PointSet &Container() { return this->c; }
 };
 
 class MinHeap : public MinHeapImpl {
   using MinHeapImpl::MinHeapImpl;
 
-public:
+ public:
   PointSet &Container() { return this->c; }
 };
 
@@ -55,8 +55,13 @@ class HNSWIndex : public Index {
     }
   };
 
-public:
-  HNSWIndex(float *data, uint32_t n_points, uint32_t dim, const Distance &distance, int M, int ef_construction)
+ public:
+  HNSWIndex(float *data,
+            uint32_t n_points,
+            uint32_t dim,
+            const Distance &distance,
+            int M,
+            int ef_construction)
       : points_(data, n_points, dim), distance_(distance) {
     top_layer_ = 0;
     M_ = M;
@@ -107,7 +112,8 @@ public:
     for (layer_t l = std::min(vertex.layer, top_layer_); l >= 0; l--) {
       uint32_t maxM = (l == 0) ? maxM0_ : maxM_;
       MaxHeap candidates = SearchLayer(query, ep, ef_construction_, l);
-      PointSet selected_points = SelectNeighborsHeuristic(query, candidates.Container(), M_);  // next ep
+      PointSet selected_points =
+          SelectNeighborsHeuristic(query, candidates.Container(), M_);  // next ep
 
       for (const Point &p : selected_points) {
         vertices_[p.first].ConnectTo(q, p.second, l);
@@ -279,8 +285,12 @@ public:
       os.write((char *)&vertices_[i].layer, sizeof(layer_t));
       for (const auto &neighbors : vertices_[i].neighbors) {
         index_t num_neighbors = neighbors.size();
+        std::vector<index_t> edges;
+        for (const auto p : neighbors) {
+          edges.push_back(p.first);
+        }
         os.write((char *)&num_neighbors, sizeof(index_t));
-        os.write((char *)neighbors.data(), sizeof(Point) * num_neighbors);
+        os.write((char *)edges.data(), sizeof(index_t) * num_neighbors);
       }
     }
     os.close();
@@ -294,6 +304,10 @@ public:
     is.read((char *)&num_points_, sizeof(index_t));
     vertices_.resize(num_points_);
 
+    int layers[32];
+    memset(layers, 0, sizeof(layers));
+    size_t num_layers = 0, out_degrees = 0;
+
     ep_ = 0;
     top_layer_ = 0;
     for (uint32_t i = 0; i < num_points_; i++) {
@@ -301,11 +315,25 @@ public:
       is.read((char *)&idx, sizeof(index_t));
       is.read((char *)&vertices_[idx].layer, sizeof(layer_t));
       vertices_[idx].neighbors.resize(vertices_[idx].layer + 1);
+
+      num_layers += vertices_[idx].layer + 1;
+
+      layer_t layer = 0;
       for (auto &neighbors : vertices_[idx].neighbors) {
         index_t num_neighbors;
         is.read((char *)&num_neighbors, sizeof(index_t));
-        neighbors.resize(num_neighbors);
-        is.read((char *)neighbors.data(), sizeof(Point) * num_neighbors);
+        neighbors.reserve(num_neighbors);
+        for (uint32_t j = 0; j < num_neighbors; j++) {
+          index_t edge;
+          is.read((char *)&edge, sizeof(index_t));
+          neighbors.emplace_back(edge, 0.0f);
+          if (edge >= num_points_) {
+            printf("Data corrupted\n");
+          }
+        }
+        // is.read((char *)neighbors.data(), sizeof(Point) * num_neighbors);
+        out_degrees += num_neighbors;
+        layers[layer++] += 1;
       }
 
       if (vertices_[idx].layer > top_layer_) {
@@ -315,14 +343,18 @@ public:
     }
     is.close();
     printf("Loaded %u points into index\n", num_points_);
+    printf("Total layers: %lu, avg out degrees: %f\n", num_layers, 1.0 * out_degrees / num_points_);
+    for (int i = 0; i <= top_layer_; i++) {
+      printf("Layer %d: %d\n", i, layers[i]);
+    }
   }
 
-private:
+ private:
   // private parameters
-  uint32_t M_;                // number of connections to be inserted to one node at one layer
-  uint32_t maxM_;             // maximumn number of neighbors of one node at one layer except layer 0
-  uint32_t maxM0_;            // maximumn number of neighbors of one node at layer 0
-  double ml_;                 // parameter of distribution to decide maximumn layer l. Autoselect ml = 1 / ln(M);
+  uint32_t M_;      // number of connections to be inserted to one node at one layer
+  uint32_t maxM_;   // maximumn number of neighbors of one node at one layer except layer 0
+  uint32_t maxM0_;  // maximumn number of neighbors of one node at layer 0
+  double ml_;  // parameter of distribution to decide maximumn layer l. Autoselect ml = 1 / ln(M);
   uint32_t ef_search_;        // number of neighbors to find while searching
   uint32_t ef_construction_;  // number of neighbors to find while constructing graph
 

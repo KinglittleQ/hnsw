@@ -7,7 +7,7 @@
 namespace hnsw {
 
 class Matrix {
-public:
+ public:
   explicit Matrix(const float *data_ptr, size_t n_rows, size_t n_cols) {
     data_ = data_ptr;
     rows_ = n_rows;
@@ -31,7 +31,7 @@ public:
     }
   }
 
-private:
+ private:
   const float *data_;
   size_t rows_, cols_;
   std::vector<const float *> row_ptrs_;

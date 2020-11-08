@@ -6,29 +6,29 @@
 #include <cstdint>
 #include <immintrin.h>
 
-#define AVX_L2SQR(addr1, addr2, dest, tmp1, tmp2)                                                                      \
-  tmp1 = _mm256_loadu_ps(addr1);                                                                                       \
-  tmp2 = _mm256_loadu_ps(addr2);                                                                                       \
-  tmp1 = _mm256_sub_ps(tmp1, tmp2);                                                                                    \
-  tmp1 = _mm256_mul_ps(tmp1, tmp1);                                                                                    \
+#define AVX_L2SQR(addr1, addr2, dest, tmp1, tmp2) \
+  tmp1 = _mm256_loadu_ps(addr1);                  \
+  tmp2 = _mm256_loadu_ps(addr2);                  \
+  tmp1 = _mm256_sub_ps(tmp1, tmp2);               \
+  tmp1 = _mm256_mul_ps(tmp1, tmp1);               \
   dest = _mm256_add_ps(dest, tmp1);
 
 namespace hnsw {
 
 class Distance {
-public:
+ public:
   Distance(size_t dim) : dim_(dim) {}
   virtual float operator()(const float *p1, const float *p2) const = 0;
   virtual ~Distance() = default;
 
   mutable size_t num = 0;
 
-protected:
+ protected:
   const size_t dim_;
 };
 
 class L2Distance : public Distance {
-public:
+ public:
   L2Distance(size_t dim) : Distance(dim) {}
 
   float operator()(const float *p1, const float *p2) const {
@@ -61,7 +61,8 @@ public:
       residual_start2 += 8;
     }
     _mm256_storeu_ps(unpack, sum);
-    result = unpack[0] + unpack[1] + unpack[2] + unpack[3] + unpack[4] + unpack[5] + unpack[6] + unpack[7];
+    result = unpack[0] + unpack[1] + unpack[2] + unpack[3] + unpack[4] + unpack[5] + unpack[6] +
+             unpack[7];
 
     if (residual_size > 0) {
       result += Sqr_(residual_start1, residual_start2, residual_size);
@@ -70,7 +71,7 @@ public:
 #endif
   }
 
-private:
+ private:
   float Sqr_(const float *p1, const float *p2, uint32_t size) const {
     // Auto vectorized with -O3 flag
     float sum = 0;
@@ -83,7 +84,7 @@ private:
 };
 
 class L1Distance : public Distance {
-public:
+ public:
   L1Distance(size_t dim) : Distance(dim) {}
   float operator()(const float *p1, const float *p2) const {
     num += 1;
