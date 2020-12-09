@@ -9,6 +9,7 @@
 #include <boost/dynamic_bitset.hpp>
 #include <cassert>
 #include <cmath>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <memory>
